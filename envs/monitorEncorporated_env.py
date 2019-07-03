@@ -82,7 +82,7 @@ class MonitorEncorporatedEnv(ProxyEnv):
             "x + 2"
         be passed in. Specifically, the elements of quantitativeMonitorSubFormulas must be strings that can
         be evaluated by the python built-in eval ,  and codeForFallbackController must be text 
-        evaluatable by the python built-in eval and must define the function fallbackController .
+        evaluatable by the python built-in exec and must define the function fallbackController .
         Plans for near-future development include investigating better ways to handle the circumstances.
         For the first swing at developing these functionalities, this arrangement should be sufficient
         and not overly brittle nor overly complex.

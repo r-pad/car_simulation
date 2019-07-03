@@ -72,7 +72,7 @@ def run_task(vv, log_dir=None, exp_name=None):
         quantitativeMonitorSubFormulas = vv["quantitativeMonitorSubFormulas"], \
         weightForQuantMonitorValueInReward = vv["weightForQuantMonitorValueInReward"], \
         codeForFallbackController = vv["codeForFallbackController"], \
-        whetherUsedMonitorFeaturesOfNot = vv["whetherUsedMonitorFeaturesOfNot"]\
+        useQuantMonitorSubformulasAsFeatures = vv["useQuantMonitorSubformulasAsFeatures"]\
         );
 
     # Save variant information for comparison plots
@@ -195,7 +195,7 @@ def main():
     vg.add('model_type', ['BrushTireModel'])
     vg.add('robot_type', [robot_type])
     vg.add('weightForQuantMonitorValueInReward', [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2,0]);
-    vg.add('whetherUsedMonitorFeaturesOfNot', [True, False]);
+    vg.add('useQuantMonitorSubformulasAsFeatures', [True, False]);
 
     # The values specified in the variables monitorSubformula_yValueMostlyPositive and
     # monitorSubformula_acceleratingInYToFast will be used by the MonitorEncorporatedEnv 
