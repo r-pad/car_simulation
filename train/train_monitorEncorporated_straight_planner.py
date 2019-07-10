@@ -183,6 +183,8 @@ def main():
     vg.add('algo', ['TRPO'])
 
 
+    targetVelocity = 1.0
+
     # Configurable parameters
     #   Options for model_type: 'BrushTireModel', 'LinearTireModel'
     #   Options for robot_type: 'MRZR', 'RCCar'
@@ -190,28 +192,36 @@ def main():
     robot_type = 'RCCar'
     use_ros = False
     vg.add('seed', seeds)
-    vg.add('target_velocity', [1.0])
+    vg.add('target_velocity', [targetVelocity])
     vg.add('dt', [0.1])
     vg.add('model_type', ['BrushTireModel'])
     vg.add('robot_type', [robot_type])
-    vg.add('weightForQuantMonitorValueInReward', [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2,0]);
+    # We are mostly uninterested in the negative values below, since they would encourage
+    #     violating the monitor....
+    vg.add('weightForQuantMonitorValueInReward', [0.0, 2.0, 0.125, -0.125, 1.0, 0.25, 0.5, -2.0]);
     vg.add('useQuantMonitorSubformulasAsFeatures', [True, False]);
 
-    # The values specified in the variables monitorSubformula_yValueMostlyPositive and
-    # monitorSubformula_acceleratingInYToFast will be used by the MonitorEncorporatedEnv 
-    # environment in a way equivalent to the following commented-out code:
-    """
-    def monitorSubformula_yValueMostlyPositive(state, additionalInfo):
-        return state[1] > -0.01;
-    def monitorSubformula_acceleratingInYToFast(state, additionalInfo):
-        return additionalInfo[1] > 0.1;
-    """
-    monitorSubformula_yValueMostlyPositive = "state[1] > -0.01";
-    monitorSubformula_acceleratingInYToFast = "axiluraryInformation[1] > 0.1";
+    # Original monitor code: "action[1] * (np.sign(state[0]) + np.sign(state[1])) > 0"
+    #     This monitor is violated when the car drives away from y=0...
+    quantMonitorSubformula_carDrivingAwayFromLine = "-action[1] * (np.sign(state[0]) + np.sign(state[1]))";
     quantitativeMonitorSubFormulas = \
-        [monitorSubformula_yValueMostlyPositive, monitorSubformula_acceleratingInYToFast];
+        [quantMonitorSubformula_carDrivingAwayFromLine];
 
-    codeForFallbackController = """fallbackController = (lambda *x: np.array([0,0]));""" 
+    codeForFallbackController = """
+import numpy as np;
+def fallbackController(observation):
+    y = observation[0]
+    yaw = observation[1]
+
+    amountToSteerOffCenter = 0.1; # very slight to avoid oversteering... but completely
+        # fails to consider drifting. As such, this is VERY MUCH a first-swing attempt
+        # with a fallback controller that we would not actually use.
+    velocityToUse = """ + str(targetVelocity) + """;
+
+    # steers toward the line
+    steeringAngle = amountToSteerOffCenter * (np.sign(y) + np.sign(yaw));
+    return np.array([steeringAngle, velocityToUse]);
+"""; 
 
     vg.add("codeForFallbackController", [codeForFallbackController, None]);
     vg.add("quantitativeMonitorSubFormulas", [quantitativeMonitorSubFormulas, []]);

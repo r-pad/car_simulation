@@ -19,7 +19,7 @@ def isProperMonitorSubFormula(thisProposedSubFormula):
 super(MonitorEncorporatedEnv, self).__init__(wrapped_env);
     if(str(type(thisProposedSubFormula))  != "<class 'function'>"):
         return False;
-    if(thisProposedSubFormula.__code__.co_argcount != 2):
+    if(thisProposedSubFormula.__code__.co_argcount != 3):
         return False;
     return True;
 """
@@ -162,7 +162,7 @@ class MonitorEncorporatedEnv(ProxyEnv):
     def evaluate_quantitativeMonitorSubFormulas(self, state, action):
         axiluraryInformation = self.getAxiluraryInformation(state)
         listToReturn = [\
-            eval(x, {"state" : state, "axiluraryInformation" :  axiluraryInformation}) \
+            eval(x, {"state" : state, "action": action, "axiluraryInformation" :  axiluraryInformation, "np" :np}) \
             for  x in self.quantitativeMonitorSubFormulas];
         ensures(isinstance(listToReturn, list));
         ensures(len(listToReturn) == len(self.quantitativeMonitorSubFormulas));
