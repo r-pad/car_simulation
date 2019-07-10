@@ -253,10 +253,13 @@ class MonitorEncorporatedEnv(ProxyEnv):
         """
         Define the shape of input vector to the neural network.
         """
+        dimensionOfOriginalObservationSpace = self._wrapped_env.observation_space.flat_dim;
         if(not self.useQuantMonitorSubformulasAsFeatures):
-            return Box(low=-np.inf, high=np.inf, shape=(5,));
+            return Box(low=-np.inf, high=np.inf, shape=(\
+                    dimensionOfOriginalObservationSpace,));
         else:
-            return Box(low=-np.inf, high=np.inf, shape=(5 +len(self.quantitativeMonitorSubFormulas)));
+            return Box(low=-np.inf, high=np.inf, shape=(\
+                    dimensionOfOriginalObservationSpace +len(self.quantitativeMonitorSubFormulas)));
         raise Exception("Control should never reach here");
         return;
 
