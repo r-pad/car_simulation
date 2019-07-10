@@ -3,7 +3,7 @@
 """
 @author: edwardahn
 
-Train local planner using TRPO so that a vehicle can follow a circular
+Train local planner using TRPO or CPO so that a vehicle can follow a circular
 trajectory with a specified curvature at a specified target velocity.
 """
 
@@ -24,9 +24,11 @@ from rllab.misc import ext, logger
 from rllab.misc.instrument import run_experiment_lite, VariantGenerator
 from rllab.misc.resolve import load_class
 from rllab.policies.gaussian_mlp_policy import GaussianMLPPolicy
+from sandbox.cpo.algos.safe.cpo import CPO
 from sandbox.cpo.baselines.linear_feature_baseline import LinearFeatureBaseline
 
 from aa_simulation.envs.circle.circle_env import CircleEnv
+from aa_simulation.safety_constraints.circle import CircleSafetyConstraint
 
 # Pre-trained policy and baseline
 policy = None
@@ -36,6 +38,9 @@ baseline = None
 def run_task(vv, log_dir=None, exp_name=None):
     global policy
     global baseline
+
+    trpo_stepsize = 0.01
+    trpo_subsample_factor = 0.2
 
     # Check if variant is available
     if vv['model_type'] not in ['BrushTireModel', 'LinearTireModel']:
@@ -69,7 +74,7 @@ def run_task(vv, log_dir=None, exp_name=None):
     # Set variance for each action component separately for exploration
     # Note: We set the variance manually because we are not scaling our
     #       action space during training.
-    init_std_speed = vv['target_velocity']
+    init_std_speed = vv['target_velocity'] / 4
     init_std_steer = np.pi / 6
     init_std = [init_std_speed, init_std_steer]
 
@@ -103,7 +108,10 @@ def run_task(vv, log_dir=None, exp_name=None):
             init_std=init_std,
             mean_network=mean_network
         )
-        baseline = LinearFeatureBaseline(env_spec=env.spec)
+        baseline = LinearFeatureBaseline(
+            env_spec=env.spec,
+            target_key='returns'
+        )
 
     # Reset variance to re-enable exploration when using pre-trained networks
     else:
@@ -123,22 +131,52 @@ def run_task(vv, log_dir=None, exp_name=None):
             outputs=[mean_var, log_std_var]
         )
 
-    algo = TRPO(
-        env=env,
-        policy=policy,
-        baseline=baseline,
-        batch_size=600,
-        max_path_length=env.horizon,
-        n_itr=600,
-        discount=0.99,
-        step_size=0.01,
-        plot=False,
+    safety_baseline = LinearFeatureBaseline(
+        env_spec=env.spec,
+        target_key='safety_returns'
     )
+
+    safety_constraint = CircleSafetyConstraint(
+        max_value=1.0,
+        eps=vv['eps'],
+        baseline=safety_baseline
+    )
+
+    if vv['algo'] == 'TRPO':
+        algo = TRPO(
+            env=env,
+            policy=policy,
+            baseline=baseline,
+            batch_size=600,
+            max_path_length=env.horizon,
+            n_itr=600,
+            discount=0.99,
+            step_size=trpo_stepsize,
+            plot=False,
+        )
+    else:
+        algo = CPO(
+            env=env,
+            policy=policy,
+            baseline=baseline,
+            safety_constraint=safety_constraint,
+            batch_size=600,
+            max_path_length=env.horizon,
+            n_itr=600,
+            discount=0.99,
+            step_size=trpo_stepsize,
+            gae_lambda=0.95,
+            safety_gae_lambda=1,
+            optimizer_args={'subsample_factor': trpo_subsample_factor},
+            plot=False
+        )
     algo.train()
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--algo', choices=['trpo', 'cpo'],
+            default='trpo', help='Type of algorithm to use to train agent')
     parser.add_argument('--network', type=str,
             help='Path to snapshot file of pre-trained network')
     args = parser.parse_args()
@@ -165,7 +203,10 @@ def main():
     # Non-configurable parameters (do not change)
     vg.add('trajectory', ['Circle'])
     vg.add('objective', ['TargetVelocity'])
-    vg.add('algo', ['TRPO'])
+    if args.algo == 'trpo':
+        vg.add('algo', ['TRPO'])
+    else:
+        vg.add('algo', ['CPO'])
 
     # Configurable parameters
     #   Options for model_type: 'BrushTireModel', 'LinearTireModel'
@@ -177,6 +218,7 @@ def main():
     vg.add('target_velocity', [1.0])
     vg.add('radius', [1.0])
     vg.add('dt', [0.1])
+    vg.add('eps', [0.05])
     vg.add('model_type', ['BrushTireModel'])
     vg.add('robot_type', [robot_type])
     vg.add('use_ros', [use_ros])

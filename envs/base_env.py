@@ -29,7 +29,13 @@ class VehicleEnv(Env):
     _HORIZON_LENGTH = 100
 
 
-    def __init__(self, target_velocity, dt, model_type, robot_type):
+    def __init__(
+            self,
+            target_velocity=1.0,
+            dt=0.035,
+            model_type='BrushTireModel',
+            robot_type='RCCar'
+    ):
         """
         Initialize environment parameters.
         """

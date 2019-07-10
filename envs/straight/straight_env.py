@@ -21,7 +21,13 @@ class StraightEnv(VehicleEnv):
     move right on the line y=0 for all time.
     """
 
-    def __init__(self, target_velocity, dt, model_type, robot_type):
+    def __init__(
+            self,
+            target_velocity=1.0,
+            dt=0.035,
+            model_type='BrushTireModel',
+            robot_type='RCCar'
+    ):
         """
         Initialize super class parameters, obstacles and radius.
         """

@@ -19,7 +19,16 @@ class FastCircleEnv(CircleEnv):
     arc trajectory using relative coordinates as fast as possible.
     """
 
-    def __init__(self, target_velocity, radius, dt, model_type, robot_type):
+    def __init__(
+            self,
+            target_velocity=1.0,
+            radius=1.0,
+            dt=0.035,
+            model_type='BrushTireModel',
+            robot_type='RCCar',
+            algo='TRPO',
+            eps=0.05
+    ):
         """
         Initialize super class parameters, obstacles and radius.
         """
@@ -31,6 +40,9 @@ class FastCircleEnv(CircleEnv):
             robot_type=robot_type
         )
 
+        self.algo = algo
+        self.eps = eps
+
 
     def get_reward(self, state, action):
         """
@@ -39,9 +51,16 @@ class FastCircleEnv(CircleEnv):
         r = self.radius
         x, y, _, x_dot, y_dot, _ = state
         velocity = np.sqrt(x_dot**2 + y_dot**2)
-        distance = r - np.sqrt(x**2 + y**2)
+        distance = np.sqrt(x**2 + y**2) - r
 
-        reward = velocity**2
+        if self.algo == 'TRPO':
+            reward = velocity**2
+            if distance >= self.eps:
+                reward -= 1000000
+        elif self.algo == 'CPO':
+            reward = velocity**2
+        else:
+            raise ValueError('Algorithm type unrecognized')
 
         info = {}
         info['dist'] = distance
