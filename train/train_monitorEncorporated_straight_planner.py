@@ -233,7 +233,7 @@ def fallbackController(observation):
         run_experiment_lite(
             stub_method_call=run_task,
             variant=vv,
-            n_parallel=1,
+            n_parallel=2,
             snapshot_mode='last',
             seed=vv['seed']
         )
