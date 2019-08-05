@@ -236,11 +236,16 @@ def fallbackController(observation):
     print('Number of Configurations: ', len(vg.variants()))
 
     # Run each experiment variant
+    indexOfStartVariant = 126; 
     for vv in vg.variants():
+        indexOfStartVariant = indexOfStartVariant - 1;
+        print("indexOfStartVariant:" + str(indexOfStartVariant), flush=True);
+        if(indexOfStartVariant > 0):
+            continue;
         run_experiment_lite(
             stub_method_call=run_task,
             variant=vv,
-            n_parallel=2,
+            n_parallel=1,
             snapshot_mode='last',
             seed=vv['seed']
         )
@@ -248,4 +253,9 @@ def fallbackController(observation):
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
 
